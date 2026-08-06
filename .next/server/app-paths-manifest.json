@@ -1,0 +1,11 @@
+{
+  "/login/page": "app/login/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/dashboard/page": "app/admin/dashboard/page.js",
+  "/admin/winners/page": "app/admin/winners/page.js",
+  "/admin/payments/page": "app/admin/payments/page.js",
+  "/admin/gallery/page": "app/admin/gallery/page.js",
+  "/admin/attendance/page": "app/admin/attendance/page.js",
+  "/admin/events/page": "app/admin/events/page.js",
+  "/admin/members/page": "app/admin/members/page.js"
+}
