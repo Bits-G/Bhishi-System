@@ -8,7 +8,7 @@ export default async function ViewerEventsPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-ink-900 mb-1">Topics / Events</h1>
-      <p className="text-ink-700/60 mb-6">Monthly Bhishi meetup history.</p>
+      <p className="text-ink-700/60 mb-6">Monthly Wani Summit meetup history.</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {events?.map((ev: any) => (

@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Download, UserCheck, UserX } from "lucide-react";
+import { Download, UserCheck, UserX, Search } from "lucide-react";
 
-type Member = { id: number; member_name: string; alot_number: number };
+type Member = { id: number; member_name: string; alot_number: number; district?: string };
 type AttendanceRow = { id: number; member_id: number; month: string; status: "present" | "absent" };
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => {
-  const d = new Date(2026, i, 1); // adjust to your Bhishi's actual start year/month
+  const d = new Date(2026, 7 + i, 1); // Aug 2026 -> July 2027
   return d.toLocaleString("default", { month: "long", year: "numeric" });
 });
 
@@ -18,33 +18,36 @@ export default function AttendanceBoard() {
   const supabase = createClient();
   const [activeMonth, setActiveMonth] = useState(0);
   const [members, setMembers] = useState<Member[]>([]);
-  const [records, setRecords] = useState<Record<number, AttendanceRow>>({});
+  const [attendance, setAttendance] = useState<Record<number, AttendanceRow>>({});
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkSaving, setBulkSaving] = useState(false);
   const monthKey = MONTHS[activeMonth];
 
   useEffect(() => {
     supabase
       .from("members")
-      .select("id, member_name, alot_number")
+      .select("id, member_name, alot_number, district")
       .order("alot_number")
       .then(({ data }) => setMembers(data ?? []));
   }, []);
 
   useEffect(() => {
     loadAttendance();
+    setSelected(new Set());
   }, [activeMonth]);
 
   async function loadAttendance() {
     const { data } = await supabase.from("attendance").select("*").eq("month", monthKey);
     const map: Record<number, AttendanceRow> = {};
-    (data ?? []).forEach((r: AttendanceRow) => (map[r.member_id] = r));
-    setRecords(map);
+    (data ?? []).forEach((a: AttendanceRow) => (map[a.member_id] = a));
+    setAttendance(map);
   }
 
   async function setStatus(member_id: number, status: "present" | "absent") {
-    // upsert on conflict (member_id, month) — matches the unique constraint in schema.sql
     const { error } = await supabase
       .from("attendance")
-      .upsert({ member_id, month: monthKey, status, marked_at: new Date().toISOString() }, { onConflict: "member_id,month" });
+      .upsert({ member_id, month: monthKey, status }, { onConflict: "member_id,month" });
     if (error) {
       alert(error.message);
       return;
@@ -52,23 +55,62 @@ export default function AttendanceBoard() {
     loadAttendance();
   }
 
+  async function setBulkStatus(status: "present" | "absent") {
+    if (selected.size === 0) return;
+    setBulkSaving(true);
+    const rows = Array.from(selected).map((member_id) => ({ member_id, month: monthKey, status }));
+    const { error } = await supabase.from("attendance").upsert(rows, { onConflict: "member_id,month" });
+    setBulkSaving(false);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    setSelected(new Set());
+    loadAttendance();
+  }
+
   function downloadPDF() {
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text(`Bhishi Attendance — ${monthKey}`, 14, 15);
+    doc.text(`Wani Summit Attendance — ${monthKey}`, 14, 15);
     autoTable(doc, {
       startY: 22,
       head: [["Alot No.", "Member Name", "Status"]],
       body: members.map((m) => [
         m.alot_number,
         m.member_name,
-        (records[m.id]?.status ?? "absent").toUpperCase(),
+        (attendance[m.id]?.status ?? "absent").toUpperCase(),
       ]),
     });
-    doc.save(`Bhishi-Attendance-${monthKey.replace(" ", "-")}.pdf`);
+    doc.save(`WaniSummit-Attendance-${monthKey.replace(" ", "-")}.pdf`);
   }
 
-  const presentCount = members.filter((m) => records[m.id]?.status === "present").length;
+  const filtered = members.filter(
+    (m) =>
+      m.member_name?.toLowerCase().includes(search.toLowerCase()) ||
+      String(m.alot_number).includes(search) ||
+      m.district?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((m) => selected.has(m.id));
+
+  function toggleOne(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allFilteredSelected) filtered.forEach((m) => next.delete(m.id));
+      else filtered.forEach((m) => next.add(m.id));
+      return next;
+    });
+  }
 
   return (
     <div>
@@ -76,16 +118,38 @@ export default function AttendanceBoard() {
         <div>
           <h1 className="text-2xl font-bold text-ink-900">Attendance — {monthKey}</h1>
           <p className="text-ink-700/60 text-sm">
-            {presentCount} present / {members.length - presentCount} absent (defaults to absent until marked)
+            Members with no record yet default to Absent until marked Present.
           </p>
         </div>
-        <button onClick={downloadPDF} className="btn-outline flex items-center gap-2">
-          <Download size={16} /> View / Download PDF
-        </button>
+        <div className="flex items-center gap-2">
+          {selected.size > 0 && (
+            <>
+              <button
+                onClick={() => setBulkStatus("present")}
+                disabled={bulkSaving}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1"
+                title={`Mark ${selected.size} selected as Present`}
+              >
+                <UserCheck size={14} /> Present ({selected.size})
+              </button>
+              <button
+                onClick={() => setBulkStatus("absent")}
+                disabled={bulkSaving}
+                className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1"
+                title={`Mark ${selected.size} selected as Absent`}
+              >
+                <UserX size={14} /> Absent ({selected.size})
+              </button>
+            </>
+          )}
+          <button onClick={downloadPDF} className="btn-outline flex items-center gap-2">
+            <Download size={16} /> View / Download PDF
+          </button>
+        </div>
       </div>
 
       {/* Month tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-3 mb-4">
+      <div className="flex gap-2 overflow-x-auto pb-3 mb-3">
         {MONTHS.map((m, i) => (
           <button
             key={m}
@@ -99,21 +163,45 @@ export default function AttendanceBoard() {
         ))}
       </div>
 
+      {/* Search bar — sits right under the View/Download PDF button, top-right */}
+      <div className="flex justify-end mb-4">
+        <div className="relative w-full max-w-xs">
+          <Search className="absolute left-3 top-2.5 text-brand-400" size={16} />
+          <input
+            className="input pl-9"
+            placeholder="Search name, district, alot no..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-brand-800 border-b border-brand-100">
+              <th className="py-2 pr-4">
+                <input type="checkbox" checked={allFilteredSelected} onChange={toggleAll} className="w-4 h-4 accent-brand-700" />
+              </th>
               <th className="py-2 pr-4">Alot No.</th>
               <th className="py-2 pr-4">Member Name</th>
               <th className="py-2 pr-4">Status</th>
-              <th className="py-2 pr-4">Actions</th>
+              <th className="py-2 pr-4">Mark</th>
             </tr>
           </thead>
           <tbody>
-            {members.map((m) => {
-              const status = records[m.id]?.status ?? "absent";
+            {filtered.map((m) => {
+              const status = attendance[m.id]?.status ?? "absent";
               return (
-                <tr key={m.id} className="border-b border-brand-50">
+                <tr key={m.id} className={`border-b border-brand-50 ${selected.has(m.id) ? "bg-brand-50/50" : ""}`}>
+                  <td className="py-2 pr-4">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(m.id)}
+                      onChange={() => toggleOne(m.id)}
+                      className="w-4 h-4 accent-brand-700"
+                    />
+                  </td>
                   <td className="py-2 pr-4">{m.alot_number}</td>
                   <td className="py-2 pr-4 font-medium">{m.member_name}</td>
                   <td className="py-2 pr-4">
@@ -132,6 +220,11 @@ export default function AttendanceBoard() {
                 </tr>
               );
             })}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={5} className="py-6 text-center text-ink-700/50">No members found.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

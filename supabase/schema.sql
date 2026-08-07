@@ -1,5 +1,5 @@
 -- ============================================================
--- BHISHI MANAGEMENT SYSTEM — SUPABASE SCHEMA
+-- WANI SUMMIT SYSTEM — SUPABASE SCHEMA
 -- Run this whole file in Supabase Dashboard > SQL Editor > New Query
 -- ============================================================
 
@@ -16,7 +16,7 @@ create table profiles (
   created_at timestamp with time zone default now()
 );
 
--- 3. MEMBERS (144 log)
+-- 3. MEMBERS (156 log)
 create table members (
   id serial primary key,
   sr_no int,
@@ -61,7 +61,7 @@ create table gallery (
   uploaded_at timestamp with time zone default now()
 );
 
--- 7. PAYMENTS (Phase 4) — 12 months x 144 members
+-- 7. PAYMENTS (Phase 4) — 12 months x 156 members
 create table payments (
   id serial primary key,
   member_id int references members(id) on delete cascade,
@@ -93,9 +93,15 @@ alter table payments enable row level security;
 alter table winners enable row level security;
 
 -- Helper function: get current logged-in user's role
+-- SECURITY DEFINER is critical here — without it, this function runs with the
+-- caller's own RLS-restricted permissions. Since it selects from `profiles`,
+-- and `profiles` itself has RLS policies that call this same function, that
+-- creates infinite recursion ("stack depth limit exceeded"). SECURITY DEFINER
+-- makes the function run with the privileges of its owner (which bypasses RLS),
+-- breaking the recursive loop.
 create or replace function current_role_name()
 returns user_role
-language sql stable
+language sql stable security definer set search_path = public
 as $$
   select role from profiles where id = auth.uid();
 $$;

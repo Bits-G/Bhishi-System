@@ -156,7 +156,7 @@ export default function MembersImportPage() {
     <div>
       <h1 className="text-2xl font-bold text-ink-900 mb-1">Import Members</h1>
       <p className="text-ink-700/60 mb-6">
-        Upload the 144-member CSV/XLSX file. Currently <b>{existingCount}</b> members in database.
+        Upload the 156-member CSV/XLSX file. Currently <b>{existingCount}</b> members in database.
       </p>
 
       <div className="card mb-6">

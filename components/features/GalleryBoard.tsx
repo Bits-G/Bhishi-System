@@ -14,7 +14,7 @@ type GalleryItem = {
 };
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => {
-  const d = new Date(2026, i, 1);
+  const d = new Date(2026, 7 + i, 1); // Aug 2026 -> July 2027
   return d.toLocaleString("default", { month: "long", year: "numeric" });
 });
 
@@ -93,7 +93,7 @@ export default function GalleryBoard() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-ink-900 mb-1">Gallery</h1>
-      <p className="text-ink-700/60 mb-6">Upload photos and video reels from each month's Bhishi event.</p>
+      <p className="text-ink-700/60 mb-6">Upload photos and video reels from each month's Wani Summit event.</p>
 
       <div className="card mb-6">
         <div className="flex flex-wrap gap-3 mb-3">

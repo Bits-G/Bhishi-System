@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => {
-  const d = new Date(2026, i, 1);
+  const d = new Date(2026, 7 + i, 1); // Aug 2026 -> July 2027
   return d.toLocaleString("default", { month: "long", year: "numeric" });
 });
 
@@ -23,7 +23,7 @@ export default async function ViewerAttendancePage({
   return (
     <div>
       <h1 className="text-2xl font-bold text-ink-900 mb-1">Attendance — {monthKey}</h1>
-      <p className="text-ink-700/60 mb-4">Live attendance record for this Bhishi group.</p>
+      <p className="text-ink-700/60 mb-4">Live attendance record for this Wani Summit Group.</p>
 
       <div className="flex gap-2 overflow-x-auto pb-3 mb-4">
         {MONTHS.map((m, i) => (

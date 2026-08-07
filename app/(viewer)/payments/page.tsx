@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => {
-  const d = new Date(2026, i, 1);
+  const d = new Date(2026, 7 + i, 1); // Aug 2026 -> July 2027
   return d.toLocaleString("default", { month: "long", year: "numeric" });
 });
 

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
+  UploadCloud,
   CalendarCheck,
   BookOpen,
   Image as ImageIcon,
@@ -18,9 +19,7 @@ import { useRouter } from "next/navigation";
 
 type NavItem = { label: string; href: string; icon: React.ElementType };
 
-const baseNav: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Members", href: "/members", icon: Users },
+const operationalNav: NavItem[] = [
   { label: "Attendance", href: "/attendance", icon: CalendarCheck },
   { label: "Topics / Events", href: "/events", icon: BookOpen },
   { label: "Gallery", href: "/gallery", icon: ImageIcon },
@@ -40,9 +39,27 @@ export default function Sidebar({
   const supabase = createClient();
   const prefix = portal ? `/${portal}` : "";
 
-  const nav = [...baseNav];
+  let nav: NavItem[] = [];
   if (portal === "master-admin") {
-    nav.splice(1, 0, { label: "Manage Admins", href: "/admins", icon: ShieldCheck });
+    nav = [
+      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Manage Admins", href: "/admins", icon: ShieldCheck },
+      { label: "Import Members", href: "/members", icon: UploadCloud },
+      { label: "Members", href: "/members-list", icon: Users },
+      ...operationalNav,
+    ];
+  } else if (portal === "admin") {
+    nav = [
+      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Members", href: "/members", icon: Users },
+      ...operationalNav,
+    ];
+  } else {
+    nav = [
+      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Members", href: "/members", icon: Users },
+      ...operationalNav,
+    ];
   }
 
   async function handleLogout() {
@@ -53,7 +70,7 @@ export default function Sidebar({
   return (
     <aside className="w-64 min-h-screen bg-gradient-to-b from-brand-950 to-ink-900 text-white flex flex-col shrink-0">
       <div className="px-5 py-6 border-b border-white/10">
-        <p className="text-xs uppercase tracking-widest text-brand-300 font-semibold">Bhishi System</p>
+        <p className="text-xs uppercase tracking-widest text-brand-300 font-semibold">Wani Summit</p>
         <p className="text-lg font-bold">{portalLabel}</p>
       </div>
 
@@ -89,3 +106,4 @@ export default function Sidebar({
     </aside>
   );
 }
+

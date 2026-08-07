@@ -8,7 +8,7 @@ export default async function ViewerGalleryPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-ink-900 mb-1">Gallery</h1>
-      <p className="text-ink-700/60 mb-6">Photos &amp; video reels from Bhishi events.</p>
+      <p className="text-ink-700/60 mb-6">Photos &amp; video reels from Wani Summit events.</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {items?.map((item: any) => (

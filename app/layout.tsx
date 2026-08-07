@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Bhishi Management System",
-  description: "144 Members | 12 Month Lucky Draw Bhishi System",
+  title: "Wani Summit System",
+  description: "156 Members | 13 Winners Monthly | Wani Summit System",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

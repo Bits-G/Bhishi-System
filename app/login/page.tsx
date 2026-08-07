@@ -50,7 +50,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-6 text-white">
           <ShieldCheck className="mx-auto mb-2" size={40} />
-          <h1 className="text-2xl font-bold">Bhishi Management System</h1>
+          <h1 className="text-2xl font-bold">Wani Summit System</h1>
           <p className="text-brand-100 text-sm">Admin &amp; Master Admin Login</p>
         </div>
 
@@ -65,7 +65,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input pl-10"
-                placeholder="you@bhishi.com"
+                placeholder="you@wanisummit.com"
               />
             </div>
           </div>
@@ -92,7 +92,7 @@ export default function LoginPage() {
           </button>
 
           <p className="text-xs text-center text-ink-700/60 pt-2">
-            Looking for the public Bhishi website?{" "}
+            Looking for the public Wani Summit website?{" "}
             <a href="/" className="text-brand-700 font-medium">
               Go to Viewer Site
             </a>

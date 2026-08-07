@@ -58,7 +58,7 @@ export default function ManageAdminsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-ink-900">Manage Admins</h1>
-          <p className="text-ink-700/60">Create and control who can manage the Bhishi data.</p>
+          <p className="text-ink-700/60">Create and control who can manage the Wani Summit data.</p>
         </div>
         <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
           <UserPlus size={18} /> Create Admin

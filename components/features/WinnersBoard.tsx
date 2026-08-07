@@ -2,23 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Trophy, Plus, MessageCircle } from "lucide-react";
+import { Trophy, Plus, MessageCircle, Pencil, Trash2, X, Check } from "lucide-react";
 
 type Member = { id: number; member_name: string; alot_number: number; whatsapp_no?: string };
 type Winner = { id: number; member_id: number; month: string; business_designation: string; members: Member };
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => {
-  const d = new Date(2026, i, 1);
+  const d = new Date(2026, 7 + i, 1); // Aug 2026 -> July 2027
   return d.toLocaleString("default", { month: "long", year: "numeric" });
 });
 
-export default function WinnersBoard() {
+export default function WinnersBoard({ isMasterAdmin = false }: { isMasterAdmin?: boolean }) {
   const supabase = createClient();
   const [activeMonth, setActiveMonth] = useState(0);
   const [eligible, setEligible] = useState<Member[]>([]);
   const [winners, setWinners] = useState<Winner[]>([]);
   const [selectedMember, setSelectedMember] = useState<number | "">("");
   const [designation, setDesignation] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState("");
   const monthKey = MONTHS[activeMonth];
 
   async function loadData() {
@@ -42,8 +44,8 @@ export default function WinnersBoard() {
 
   async function addWinner() {
     if (!selectedMember) return;
-    if (winners.length >= 12) {
-      alert("12 winners already added for this month!");
+    if (winners.length >= 13) {
+      alert("13 winners already added for this month!");
       return;
     }
     const { error } = await supabase.from("winners").insert({
@@ -71,7 +73,7 @@ export default function WinnersBoard() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         to: number.replace(/\D/g, ""), // strip spaces/dashes, keep digits only
-        message: `🎉 Congratulations ${w.members?.member_name}! You are the Bhishi lucky draw winner for ${w.month}. Please contact the committee for further details.`,
+        message: `🎉 Congratulations ${w.members?.member_name}! You are the Wani Summit lucky draw winner for ${w.month}. Please contact the committee for further details.`,
       }),
     });
     const data = await res.json();
@@ -80,6 +82,31 @@ export default function WinnersBoard() {
       return;
     }
     alert("WhatsApp notification sent!");
+  }
+
+  async function deleteWinner(w: Winner) {
+    if (
+      !confirm(
+        `Remove ${w.members?.member_name} from ${w.month} winners? They will become eligible for future lucky draws again.`
+      )
+    )
+      return;
+    const { error } = await supabase.from("winners").delete().eq("id", w.id);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    loadData();
+  }
+
+  async function saveDesignation(w: Winner) {
+    const { error } = await supabase.from("winners").update({ business_designation: editValue }).eq("id", w.id);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    setEditingId(null);
+    loadData();
   }
 
   return (
@@ -107,7 +134,7 @@ export default function WinnersBoard() {
 
       <div className="card mb-6">
         <p className="font-semibold mb-3">
-          Add Winner for {monthKey} ({winners.length}/12 added)
+          Add Winner for {monthKey} ({winners.length}/13 added)
         </p>
         <div className="flex flex-wrap gap-3">
           <select className="input flex-1 min-w-[200px]" value={selectedMember} onChange={(e) => setSelectedMember(Number(e.target.value))}>
@@ -133,13 +160,54 @@ export default function WinnersBoard() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {winners.map((w) => (
-          <div key={w.id} className="card border-amber-200 bg-amber-50/40">
-            <div className="flex items-center gap-2 mb-1">
+          <div key={w.id} className="card border-amber-200 bg-amber-50/40 relative">
+            {isMasterAdmin && (
+              <button
+                onClick={() => deleteWinner(w)}
+                className="absolute top-3 right-3 text-rose-600 hover:text-rose-800"
+                title="Remove this winner (mistaken entry)"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+            <div className="flex items-center gap-2 mb-1 pr-6">
               <Trophy size={18} className="text-amber-500" />
               <p className="font-bold text-ink-900">{w.members?.member_name}</p>
             </div>
             <p className="text-sm text-ink-700/70">Alot No: {w.members?.alot_number}</p>
-            {w.business_designation && <p className="text-sm text-brand-800 mt-1">{w.business_designation}</p>}
+
+            {editingId === w.id ? (
+              <div className="flex items-center gap-2 mt-1">
+                <input
+                  className="input py-1 text-sm flex-1"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  placeholder="Business / Designation"
+                  autoFocus
+                />
+                <button onClick={() => saveDesignation(w)} className="text-emerald-600" title="Save">
+                  <Check size={16} />
+                </button>
+                <button onClick={() => setEditingId(null)} className="text-ink-700/50" title="Cancel">
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-sm text-brand-800">{w.business_designation || <span className="text-ink-700/40">No designation set</span>}</p>
+                <button
+                  onClick={() => {
+                    setEditingId(w.id);
+                    setEditValue(w.business_designation ?? "");
+                  }}
+                  className="text-brand-700"
+                  title="Edit business/designation"
+                >
+                  <Pencil size={13} />
+                </button>
+              </div>
+            )}
+
             <button
               onClick={() => notifyWinner(w)}
               className="text-emerald-700 text-xs font-medium flex items-center gap-1 mt-3 hover:underline"
@@ -148,6 +216,9 @@ export default function WinnersBoard() {
             </button>
           </div>
         ))}
+        {winners.length === 0 && (
+          <p className="text-ink-700/50 text-sm col-span-full">No winners added for {monthKey} yet.</p>
+        )}
       </div>
     </div>
   );

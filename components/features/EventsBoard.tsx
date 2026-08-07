@@ -15,7 +15,7 @@ type EventRow = {
 };
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => {
-  const d = new Date(2026, i, 1);
+  const d = new Date(2026, 7 + i, 1); // Aug 2026 -> July 2027
   return d.toLocaleString("default", { month: "long", year: "numeric" });
 });
 
@@ -67,13 +67,13 @@ export default function EventsBoard() {
   function downloadPDF(ev: EventRow) {
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text(`Bhishi Event — ${ev.month}`, 14, 15);
+    doc.text(`Wani Summit Event — ${ev.month}`, 14, 15);
     doc.setFontSize(11);
     doc.text(`Place: ${ev.place || "-"}`, 14, 26);
     doc.text(`Topic: ${ev.topic || "-"}`, 14, 34);
     const desc = doc.splitTextToSize(ev.description || "-", 180);
     doc.text(desc, 14, 44);
-    doc.save(`Bhishi-Event-${ev.month.replace(" ", "-")}.pdf`);
+    doc.save(`WaniSummit-Event-${ev.month.replace(" ", "-")}.pdf`);
   }
 
   return (
@@ -81,7 +81,7 @@ export default function EventsBoard() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-ink-900">Topics / Events</h1>
-          <p className="text-ink-700/60 text-sm">Record each month's Bhishi meetup — place, topic, and full story.</p>
+          <p className="text-ink-700/60 text-sm">Record each month's Wani Summit meetup — place, topic, and full story.</p>
         </div>
         <button onClick={openNew} className="btn-primary flex items-center gap-2">
           <Plus size={18} /> Add Event
