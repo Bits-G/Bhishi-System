@@ -1,7 +1,7 @@
 {
-  "/(viewer)/dashboard/page": "app/(viewer)/dashboard/page.js",
-  "/admin/dashboard/page": "app/admin/dashboard/page.js",
-  "/(viewer)/members/page": "app/(viewer)/members/page.js",
+  "/login/page": "app/login/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/(viewer)/birthdays/page": "app/(viewer)/birthdays/page.js",
   "/admin/birthdays/page": "app/admin/birthdays/page.js",
-  "/admin/members/page": "app/admin/members/page.js"
+  "/admin/dashboard/page": "app/admin/dashboard/page.js"
 }
