@@ -585,6 +585,10 @@ video {
   margin-left: auto;
   margin-right: auto;
 }
+.my-auto {
+  margin-top: auto;
+  margin-bottom: auto;
+}
 .mb-1 {
   margin-bottom: 0.25rem;
 }
@@ -656,6 +660,9 @@ video {
 }
 .h-4 {
   height: 1rem;
+}
+.max-h-56 {
+  max-height: 14rem;
 }
 .max-h-96 {
   max-height: 24rem;
@@ -1156,6 +1163,10 @@ video {
 .py-6 {
   padding-top: 1.5rem;
   padding-bottom: 1.5rem;
+}
+.py-8 {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
 }
 .pb-3 {
   padding-bottom: 0.75rem;

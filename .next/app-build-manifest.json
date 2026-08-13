@@ -1,9 +1,14 @@
 {
   "pages": {
-    "/login/page": [
+    "/(viewer)/winners/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/login/page.js"
+      "static/chunks/app/(viewer)/winners/page.js"
+    ],
+    "/(viewer)/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(viewer)/layout.js"
     ],
     "/layout": [
       "static/chunks/webpack.js",
@@ -11,40 +16,35 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/admin/page": [
+    "/(viewer)/gallery/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/page.js"
+      "static/chunks/app/(viewer)/gallery/page.js"
+    ],
+    "/(viewer)/events/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(viewer)/events/page.js"
+    ],
+    "/admin/birthdays/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/birthdays/page.js"
     ],
     "/admin/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/admin/layout.js"
     ],
-    "/(viewer)/birthdays/page": [
+    "/admin/events/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(viewer)/birthdays/page.js"
+      "static/chunks/app/admin/events/page.js"
     ],
-    "/(viewer)/layout": [
+    "/admin/gallery/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(viewer)/layout.js"
-    ],
-    "/(viewer)/dashboard/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(viewer)/dashboard/page.js"
-    ],
-    "/admin/dashboard/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/dashboard/page.js"
-    ],
-    "/admin/birthdays/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/birthdays/page.js"
+      "static/chunks/app/admin/gallery/page.js"
     ]
   }
 }

@@ -1,7 +1,8 @@
 {
-  "/login/page": "app/login/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/(viewer)/birthdays/page": "app/(viewer)/birthdays/page.js",
+  "/(viewer)/winners/page": "app/(viewer)/winners/page.js",
   "/admin/birthdays/page": "app/admin/birthdays/page.js",
-  "/admin/dashboard/page": "app/admin/dashboard/page.js"
+  "/admin/gallery/page": "app/admin/gallery/page.js",
+  "/admin/events/page": "app/admin/events/page.js",
+  "/(viewer)/events/page": "app/(viewer)/events/page.js",
+  "/(viewer)/gallery/page": "app/(viewer)/gallery/page.js"
 }
