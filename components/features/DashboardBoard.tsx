@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { createPdfDoc, PDF_FONT_NAME } from "@/lib/pdf/createDoc";
 import {
   Users,
   Wallet,
@@ -156,31 +157,39 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
     }
   }
 
-  function downloadPDF() {
-    const doc = new jsPDF();
+  async function downloadPDF() {
+    const doc = await createPdfDoc();
     doc.setFontSize(16);
     doc.text(`Wani Summit — ${panelTitle()}`, 14, 15);
     if (activeCard === "winners") {
       autoTable(doc, {
         startY: 22,
+        styles: { font: PDF_FONT_NAME },
+        headStyles: { font: PDF_FONT_NAME },
         head: [["Month", "Alot No.", "Member Name", "Business/Designation"]],
         body: winners.map((w) => [w.month, w.members?.alot_number, w.members?.member_name, w.business_designation ?? "-"]),
       });
     } else if (activeCard === "paymentHistory") {
       autoTable(doc, {
         startY: 22,
+        styles: { font: PDF_FONT_NAME },
+        headStyles: { font: PDF_FONT_NAME },
         head: [["Alot No.", "Member Name", "District", "Payment"]],
         body: members.map((m) => [m.alot_number, m.member_name, m.district ?? "-", statusMap[m.id] === "paid" ? "Paid" : "Pending"]),
       });
     } else if (activeCard === "attendanceHistory") {
       autoTable(doc, {
         startY: 22,
+        styles: { font: PDF_FONT_NAME },
+        headStyles: { font: PDF_FONT_NAME },
         head: [["Alot No.", "Member Name", "District", "Attendance"]],
         body: members.map((m) => [m.alot_number, m.member_name, m.district ?? "-", statusMap[m.id] === "present" ? "Present" : "Absent"]),
       });
     } else {
       autoTable(doc, {
         startY: 22,
+        styles: { font: PDF_FONT_NAME },
+        headStyles: { font: PDF_FONT_NAME },
         head: [["Alot No.", "Member Name", "District"]],
         body: getFilteredMembers().map((m) => [m.alot_number, m.member_name, m.district ?? "-"]),
       });

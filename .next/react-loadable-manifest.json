@@ -1,4 +1,10 @@
 {
+  "lib\\pdf\\createDoc.ts -> ./notoDevanagariFont": {
+    "id": "lib\\pdf\\createDoc.ts -> ./notoDevanagariFont",
+    "files": [
+      "static/chunks/_app-pages-browser_lib_pdf_notoDevanagariFont_ts.js"
+    ]
+  },
   "node_modules\\jspdf\\dist\\jspdf.es.min.js -> canvg": {
     "id": "node_modules\\jspdf\\dist\\jspdf.es.min.js -> canvg",
     "files": [

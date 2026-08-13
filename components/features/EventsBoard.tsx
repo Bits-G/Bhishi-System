@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import jsPDF from "jspdf";
+import { createPdfDoc } from "@/lib/pdf/createDoc";
 import {
   Download, Plus, MapPin, Trash2, Pencil, X, Folder, ArrowLeft, Upload,
   FileText, Image as ImageIcon, Video, Paperclip,
@@ -124,8 +125,8 @@ export default function EventsBoard({ canManage = false }: { canManage?: boolean
     loadEvents();
   }
 
-  function downloadPDF(ev: EventRow) {
-    const doc = new jsPDF();
+  async function downloadPDF(ev: EventRow) {
+    const doc = await createPdfDoc();
     doc.setFontSize(16);
     doc.text(`Wani Summit Event — ${ev.month}`, 14, 15);
     doc.setFontSize(11);

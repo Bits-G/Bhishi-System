@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { createPdfDoc, PDF_FONT_NAME } from "@/lib/pdf/createDoc";
 import { Download, CheckCircle2, XCircle, Pencil, Search } from "lucide-react";
 
 type Member = { id: number; member_name: string; alot_number: number; district?: string };
@@ -83,12 +84,14 @@ export default function PaymentsBoard() {
     loadPayments();
   }
 
-  function downloadPDF() {
-    const doc = new jsPDF();
+  async function downloadPDF() {
+    const doc = await createPdfDoc();
     doc.setFontSize(16);
     doc.text(`Wani Summit Payments — ${monthKey}`, 14, 15);
     autoTable(doc, {
       startY: 22,
+      styles: { font: PDF_FONT_NAME },
+      headStyles: { font: PDF_FONT_NAME },
       head: [["Alot No.", "Member Name", "Amount", "Status"]],
       body: members.map((m) => [
         m.alot_number,
