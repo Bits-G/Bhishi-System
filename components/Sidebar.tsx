@@ -13,6 +13,7 @@ import {
   Trophy,
   ShieldCheck,
   LogOut,
+  Cake,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -25,6 +26,7 @@ const operationalNav: NavItem[] = [
   { label: "Gallery", href: "/gallery", icon: ImageIcon },
   { label: "Payments (Paid/Unpaid)", href: "/payments", icon: Wallet },
   { label: "Winners of the Month", href: "/winners", icon: Trophy },
+  { label: "Birthdays of the Month", href: "/birthdays", icon: Cake },
 ];
 
 export default function Sidebar({

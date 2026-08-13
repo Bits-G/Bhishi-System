@@ -1,15 +1,7 @@
 {
-  "/login/page": "app/login/page.js",
-  "/admin/members/page": "app/admin/members/page.js",
+  "/(viewer)/dashboard/page": "app/(viewer)/dashboard/page.js",
   "/admin/dashboard/page": "app/admin/dashboard/page.js",
-  "/admin/winners/page": "app/admin/winners/page.js",
-  "/master-admin/dashboard/page": "app/master-admin/dashboard/page.js",
-  "/master-admin/page": "app/master-admin/page.js",
-  "/master-admin/winners/page": "app/master-admin/winners/page.js",
-  "/master-admin/payments/page": "app/master-admin/payments/page.js",
-  "/master-admin/members/page": "app/master-admin/members/page.js",
-  "/master-admin/members-list/page": "app/master-admin/members-list/page.js",
-  "/master-admin/admins/page": "app/master-admin/admins/page.js",
-  "/master-admin/attendance/page": "app/master-admin/attendance/page.js",
-  "/master-admin/events/page": "app/master-admin/events/page.js"
+  "/(viewer)/members/page": "app/(viewer)/members/page.js",
+  "/admin/birthdays/page": "app/admin/birthdays/page.js",
+  "/admin/members/page": "app/admin/members/page.js"
 }

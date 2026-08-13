@@ -111,6 +111,11 @@ export default function AdminMembersPage() {
                 onChange={(e) => setEditing({ ...editing, mobile_no: e.target.value })} placeholder="Mobile No" />
               <input className="input" value={editing.whatsapp_no ?? ""}
                 onChange={(e) => setEditing({ ...editing, whatsapp_no: e.target.value })} placeholder="WhatsApp No" />
+              <div>
+                <label className="text-xs text-ink-700/60 font-medium">Date of Birth</label>
+                <input className="input mt-1" type="date" value={editing.dob ?? ""}
+                  onChange={(e) => setEditing({ ...editing, dob: e.target.value })} />
+              </div>
               <input className="input" type="number" value={editing.alot_number}
                 onChange={(e) => setEditing({ ...editing, alot_number: Number(e.target.value) })} placeholder="Alot Number" />
               <button type="submit" className="btn-primary w-full">Save Changes</button>
