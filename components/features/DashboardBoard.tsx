@@ -23,8 +23,17 @@ import {
   Briefcase,
 } from "lucide-react";
 
-type Member = { id: number; member_name: string; alot_number: number; district?: string; work_designation?: string | null };
-type CardKey = "members" | "paid" | "unpaid" | "present" | "absent" | "paymentHistory" | "attendanceHistory" | "work" | "winners" | "admins";
+type Member = { id: number; member_name: string; alot_number: number; district?: string };
+type BizEntry = {
+  member_id: number;
+  info_type: "work" | "business" | "both";
+  work_name?: string;
+  work_role?: string;
+  business_name?: string;
+  business_role?: string;
+  work_status?: string;
+};
+type CardKey = "members" | "paid" | "unpaid" | "present" | "absent" | "paymentHistory" | "attendanceHistory" | "businessDirectory" | "winners" | "admins";
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => {
   const d = new Date(2026, 7 + i, 1); // Aug 2026 -> July 2027
@@ -48,11 +57,12 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
   const currentMonthLabel = MONTHS[currentMonthIndex];
 
   const [members, setMembers] = useState<Member[]>([]);
-  const [counts, setCounts] = useState({ members: 0, paid: 0, unpaid: 0, present: 0, absent: 0, winners: 0, admins: 0 });
+  const [counts, setCounts] = useState({ members: 0, paid: 0, unpaid: 0, present: 0, absent: 0, winners: 0, admins: 0, bizSubmitted: 0 });
   const [activeCard, setActiveCard] = useState<CardKey | null>(null);
   const [activeMonth, setActiveMonth] = useState(currentMonthIndex);
   const [statusMap, setStatusMap] = useState<Record<number, string>>({});
   const [winners, setWinners] = useState<any[]>([]);
+  const [bizEntries, setBizEntries] = useState<Record<number, BizEntry>>({});
   const [loadingPanel, setLoadingPanel] = useState(false);
   const [editingWinnerId, setEditingWinnerId] = useState<number | null>(null);
   const [editWinnerValue, setEditWinnerValue] = useState("");
@@ -63,12 +73,13 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
 
   async function loadCounts() {
     const monthKey = MONTHS[currentMonthIndex];
-    const [{ data: memberRows, count: memberCount }, { count: paidCount }, { count: presentCount }, { count: winnerCount }] =
+    const [{ data: memberRows, count: memberCount }, { count: paidCount }, { count: presentCount }, { count: winnerCount }, { count: bizCount }] =
       await Promise.all([
-        supabase.from("members").select("id, member_name, alot_number, district, work_designation", { count: "exact" }).order("alot_number"),
+        supabase.from("members").select("id, member_name, alot_number, district", { count: "exact" }).order("alot_number"),
         supabase.from("payments").select("*", { count: "exact", head: true }).eq("status", "paid").eq("month", monthKey),
         supabase.from("attendance").select("*", { count: "exact", head: true }).eq("status", "present").eq("month", monthKey),
         supabase.from("winners").select("*", { count: "exact", head: true }),
+        supabase.from("business_directory").select("*", { count: "exact", head: true }),
       ]);
 
     setMembers(memberRows ?? []);
@@ -88,6 +99,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
       absent: Math.max(total - (presentCount ?? 0), 0),
       winners: winnerCount ?? 0,
       admins: adminCount,
+      bizSubmitted: bizCount ?? 0,
     });
   }
 
@@ -103,7 +115,9 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
     setActiveCard(key);
     if (key === "winners") {
       await loadWinners();
-    } else if (key !== "members" && key !== "work") {
+    } else if (key === "businessDirectory") {
+      await loadBizDirectory();
+    } else if (key !== "members") {
       await loadStatusForMonth(key, activeMonth);
     }
   }
@@ -115,6 +129,15 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
       .select("id, month, business_designation, members(member_name, alot_number)")
       .order("won_at", { ascending: false });
     setWinners(data ?? []);
+    setLoadingPanel(false);
+  }
+
+  async function loadBizDirectory() {
+    setLoadingPanel(true);
+    const { data } = await supabase.from("business_directory").select("*");
+    const map: Record<number, BizEntry> = {};
+    (data ?? []).forEach((e: BizEntry) => (map[e.member_id] = e));
+    setBizEntries(map);
     setLoadingPanel(false);
   }
 
@@ -153,7 +176,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
       case "absent": return `Absent Members — ${MONTHS[activeMonth]}`;
       case "paymentHistory": return `Payment History — ${MONTHS[activeMonth]}`;
       case "attendanceHistory": return `Attendance History — ${MONTHS[activeMonth]}`;
-      case "work": return "Work / Designation";
+      case "businessDirectory": return "Business Directory";
       case "winners": return "All Winners";
       default: return "";
     }
@@ -187,13 +210,23 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
         head: [["Alot No.", "Member Name", "District", "Attendance"]],
         body: members.map((m) => [m.alot_number, m.member_name, m.district ?? "-", statusMap[m.id] === "present" ? "Present" : "Absent"]),
       });
-    } else if (activeCard === "work") {
+    } else if (activeCard === "businessDirectory") {
       autoTable(doc, {
         startY: 22,
         styles: { font: PDF_FONT_NAME },
         headStyles: { font: PDF_FONT_NAME },
-        head: [["Alot No.", "Member Name", "District", "Work/Designation"]],
-        body: members.map((m) => [m.alot_number, m.member_name, m.district ?? "-", m.work_designation || "Not set"]),
+        head: [["Alot No.", "Member Name", "District", "Work", "Business", "Status"]],
+        body: members.map((m) => {
+          const e = bizEntries[m.id];
+          return [
+            m.alot_number,
+            m.member_name,
+            m.district ?? "-",
+            e?.work_name ? `${e.work_name}${e.work_role ? " - " + e.work_role : ""}` : "-",
+            e?.business_name ? `${e.business_name}${e.business_role ? " - " + e.business_role : ""}` : "-",
+            e?.work_status ?? "-",
+          ];
+        }),
       });
     } else {
       autoTable(doc, {
@@ -211,7 +244,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
     if (activeCard === "paid" || activeCard === "unpaid" || activeCard === "paymentHistory") router.push(`${prefix}/payments`);
     else if (activeCard === "present" || activeCard === "absent" || activeCard === "attendanceHistory") router.push(`${prefix}/attendance`);
     else if (activeCard === "winners") router.push(`${prefix}/winners`);
-    else if (activeCard === "work") router.push(`${prefix}/work`);
+    else if (activeCard === "businessDirectory") router.push(`${prefix}/business-directory`);
     else if (activeCard === "members") router.push(portal === "master-admin" ? "/master-admin/members-list" : "/admin/members");
   }
 
@@ -233,7 +266,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
     { key: "absent", label: "Absent Members", subLabel: `${currentMonthLabel} (Current Month)`, icon: UserX, color: "from-orange-400 to-orange-600", clickable: true },
     { key: "paymentHistory", label: "Payment History", icon: History, color: "from-teal-400 to-teal-600", clickable: true },
     { key: "attendanceHistory", label: "Attendance History", icon: CalendarClock, color: "from-cyan-400 to-cyan-600", clickable: true },
-    { key: "work", label: "Work / Designation", icon: Briefcase, color: "from-fuchsia-400 to-fuchsia-600", clickable: true },
+    { key: "businessDirectory", label: "Business Directory", subLabel: `${counts.bizSubmitted} of ${counts.members} submitted`, icon: Briefcase, color: "from-fuchsia-400 to-fuchsia-600", clickable: true },
     { key: "winners", label: "Winners Declared", icon: Trophy, color: "from-amber-400 to-amber-600", clickable: true },
   ];
   if (portal === "master-admin") {
@@ -254,7 +287,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
     absent: counts.absent,
     paymentHistory: counts.members,
     attendanceHistory: counts.members,
-    work: counts.members,
+    businessDirectory: counts.members,
     winners: counts.winners,
     admins: counts.admins,
   };
@@ -285,7 +318,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
           <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <h2 className="text-lg font-bold text-ink-900">{panelTitle()}</h2>
             <div className="flex items-center gap-2">
-              {isStaff && (showMonthTabs || activeCard === "winners" || activeCard === "members" || activeCard === "work") && (
+              {isStaff && (showMonthTabs || activeCard === "winners" || activeCard === "members" || activeCard === "businessDirectory") && (
                 <button
                   onClick={handleEdit}
                   className="bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1"
@@ -384,7 +417,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
                 </tbody>
               </table>
             </div>
-          ) : activeCard === "work" ? (
+          ) : activeCard === "businessDirectory" ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -392,20 +425,31 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
                     <th className="py-2 pr-4">Alot No.</th>
                     <th className="py-2 pr-4">Member Name</th>
                     <th className="py-2 pr-4">District</th>
-                    <th className="py-2 pr-4">Work / Designation</th>
+                    <th className="py-2 pr-4">Work</th>
+                    <th className="py-2 pr-4">Business</th>
+                    <th className="py-2 pr-4">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {members.map((m) => (
-                    <tr key={m.id} className="border-b border-brand-50">
-                      <td className="py-2 pr-4">{m.alot_number}</td>
-                      <td className="py-2 pr-4 font-medium">{m.member_name}</td>
-                      <td className="py-2 pr-4">{m.district}</td>
-                      <td className="py-2 pr-4">{m.work_designation || <span className="text-ink-700/40">Not set</span>}</td>
-                    </tr>
-                  ))}
+                  {members.map((m) => {
+                    const e = bizEntries[m.id];
+                    return (
+                      <tr key={m.id} className="border-b border-brand-50">
+                        <td className="py-2 pr-4">{m.alot_number}</td>
+                        <td className="py-2 pr-4 font-medium">{m.member_name}</td>
+                        <td className="py-2 pr-4">{m.district}</td>
+                        <td className="py-2 pr-4">
+                          {e?.work_name ? `${e.work_name}${e.work_role ? " - " + e.work_role : ""}` : <span className="text-ink-700/40">-</span>}
+                        </td>
+                        <td className="py-2 pr-4">
+                          {e?.business_name ? `${e.business_name}${e.business_role ? " - " + e.business_role : ""}` : <span className="text-ink-700/40">-</span>}
+                        </td>
+                        <td className="py-2 pr-4">{e?.work_status || <span className="text-ink-700/40">Not set</span>}</td>
+                      </tr>
+                    );
+                  })}
                   {members.length === 0 && (
-                    <tr><td colSpan={4} className="py-6 text-center text-ink-700/50">No members found.</td></tr>
+                    <tr><td colSpan={6} className="py-6 text-center text-ink-700/50">No members found.</td></tr>
                   )}
                 </tbody>
               </table>

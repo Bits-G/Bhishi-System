@@ -28,7 +28,7 @@ const operationalNav: NavItem[] = [
   { label: "Payments (Paid/Unpaid)", href: "/payments", icon: Wallet },
   { label: "Winners of the Month", href: "/winners", icon: Trophy },
   { label: "Birthdays of the Month", href: "/birthdays", icon: Cake },
-  { label: "Work / Designation", href: "/work", icon: Briefcase },
+  { label: "Business Directory", href: "/business-directory", icon: Briefcase },
 ];
 
 export default function Sidebar({
