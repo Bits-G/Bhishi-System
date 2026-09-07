@@ -20,10 +20,11 @@ import {
   Check,
   History,
   CalendarClock,
+  Briefcase,
 } from "lucide-react";
 
-type Member = { id: number; member_name: string; alot_number: number; district?: string };
-type CardKey = "members" | "paid" | "unpaid" | "present" | "absent" | "paymentHistory" | "attendanceHistory" | "winners" | "admins";
+type Member = { id: number; member_name: string; alot_number: number; district?: string; work_designation?: string | null };
+type CardKey = "members" | "paid" | "unpaid" | "present" | "absent" | "paymentHistory" | "attendanceHistory" | "work" | "winners" | "admins";
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => {
   const d = new Date(2026, 7 + i, 1); // Aug 2026 -> July 2027
@@ -64,7 +65,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
     const monthKey = MONTHS[currentMonthIndex];
     const [{ data: memberRows, count: memberCount }, { count: paidCount }, { count: presentCount }, { count: winnerCount }] =
       await Promise.all([
-        supabase.from("members").select("id, member_name, alot_number, district", { count: "exact" }).order("alot_number"),
+        supabase.from("members").select("id, member_name, alot_number, district, work_designation", { count: "exact" }).order("alot_number"),
         supabase.from("payments").select("*", { count: "exact", head: true }).eq("status", "paid").eq("month", monthKey),
         supabase.from("attendance").select("*", { count: "exact", head: true }).eq("status", "present").eq("month", monthKey),
         supabase.from("winners").select("*", { count: "exact", head: true }),
@@ -102,7 +103,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
     setActiveCard(key);
     if (key === "winners") {
       await loadWinners();
-    } else if (key !== "members") {
+    } else if (key !== "members" && key !== "work") {
       await loadStatusForMonth(key, activeMonth);
     }
   }
@@ -152,6 +153,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
       case "absent": return `Absent Members — ${MONTHS[activeMonth]}`;
       case "paymentHistory": return `Payment History — ${MONTHS[activeMonth]}`;
       case "attendanceHistory": return `Attendance History — ${MONTHS[activeMonth]}`;
+      case "work": return "Work / Designation";
       case "winners": return "All Winners";
       default: return "";
     }
@@ -185,6 +187,14 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
         head: [["Alot No.", "Member Name", "District", "Attendance"]],
         body: members.map((m) => [m.alot_number, m.member_name, m.district ?? "-", statusMap[m.id] === "present" ? "Present" : "Absent"]),
       });
+    } else if (activeCard === "work") {
+      autoTable(doc, {
+        startY: 22,
+        styles: { font: PDF_FONT_NAME },
+        headStyles: { font: PDF_FONT_NAME },
+        head: [["Alot No.", "Member Name", "District", "Work/Designation"]],
+        body: members.map((m) => [m.alot_number, m.member_name, m.district ?? "-", m.work_designation || "Not set"]),
+      });
     } else {
       autoTable(doc, {
         startY: 22,
@@ -201,6 +211,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
     if (activeCard === "paid" || activeCard === "unpaid" || activeCard === "paymentHistory") router.push(`${prefix}/payments`);
     else if (activeCard === "present" || activeCard === "absent" || activeCard === "attendanceHistory") router.push(`${prefix}/attendance`);
     else if (activeCard === "winners") router.push(`${prefix}/winners`);
+    else if (activeCard === "work") router.push(`${prefix}/work`);
     else if (activeCard === "members") router.push(portal === "master-admin" ? "/master-admin/members-list" : "/admin/members");
   }
 
@@ -222,6 +233,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
     { key: "absent", label: "Absent Members", subLabel: `${currentMonthLabel} (Current Month)`, icon: UserX, color: "from-orange-400 to-orange-600", clickable: true },
     { key: "paymentHistory", label: "Payment History", icon: History, color: "from-teal-400 to-teal-600", clickable: true },
     { key: "attendanceHistory", label: "Attendance History", icon: CalendarClock, color: "from-cyan-400 to-cyan-600", clickable: true },
+    { key: "work", label: "Work / Designation", icon: Briefcase, color: "from-fuchsia-400 to-fuchsia-600", clickable: true },
     { key: "winners", label: "Winners Declared", icon: Trophy, color: "from-amber-400 to-amber-600", clickable: true },
   ];
   if (portal === "master-admin") {
@@ -242,6 +254,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
     absent: counts.absent,
     paymentHistory: counts.members,
     attendanceHistory: counts.members,
+    work: counts.members,
     winners: counts.winners,
     admins: counts.admins,
   };
@@ -272,7 +285,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
           <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <h2 className="text-lg font-bold text-ink-900">{panelTitle()}</h2>
             <div className="flex items-center gap-2">
-              {isStaff && (showMonthTabs || activeCard === "winners" || activeCard === "members") && (
+              {isStaff && (showMonthTabs || activeCard === "winners" || activeCard === "members" || activeCard === "work") && (
                 <button
                   onClick={handleEdit}
                   className="bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1"
@@ -367,6 +380,32 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
                   ))}
                   {winners.length === 0 && (
                     <tr><td colSpan={isStaff ? 5 : 4} className="py-6 text-center text-ink-700/50">No winners declared yet.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : activeCard === "work" ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-brand-800 border-b border-brand-100">
+                    <th className="py-2 pr-4">Alot No.</th>
+                    <th className="py-2 pr-4">Member Name</th>
+                    <th className="py-2 pr-4">District</th>
+                    <th className="py-2 pr-4">Work / Designation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {members.map((m) => (
+                    <tr key={m.id} className="border-b border-brand-50">
+                      <td className="py-2 pr-4">{m.alot_number}</td>
+                      <td className="py-2 pr-4 font-medium">{m.member_name}</td>
+                      <td className="py-2 pr-4">{m.district}</td>
+                      <td className="py-2 pr-4">{m.work_designation || <span className="text-ink-700/40">Not set</span>}</td>
+                    </tr>
+                  ))}
+                  {members.length === 0 && (
+                    <tr><td colSpan={4} className="py-6 text-center text-ink-700/50">No members found.</td></tr>
                   )}
                 </tbody>
               </table>
