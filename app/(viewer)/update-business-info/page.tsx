@@ -39,7 +39,7 @@ const STATUS_OPTIONS = [
 function UpdateBusinessInfoInner() {
   const supabase = createClient();
   const searchParams = useSearchParams();
-  const presetAlot = searchParams.get("alot"); // set when arriving from inside a folder — skips the search step
+  const presetAlot = searchParams.get("alot"); // set when arriving from inside a folder
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MemberHit[]>([]);
@@ -73,7 +73,6 @@ function UpdateBusinessInfoInner() {
   const [submitError, setSubmitError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // Arrived from inside a folder (?alot=42) — look that member up directly, skip search.
   useEffect(() => {
     if (!presetAlot) return;
     supabase
@@ -201,21 +200,24 @@ function UpdateBusinessInfoInner() {
     setSuccess(true);
   }
 
+  const folderBackHref = presetAlot ? `/business-directory?open=${presetAlot}` : "/business-directory";
+  const folderBackLabel = presetAlot ? "Back to your folder" : "Back to Business Directory";
+
   if (success) {
     return (
       <div className="max-w-md mx-auto text-center py-16">
         <CheckCircle2 size={48} className="mx-auto text-emerald-500 mb-3" />
         <h1 className="text-xl font-bold text-ink-900">Saved!</h1>
         <p className="text-ink-700/60 mt-1">Your business/work info is now live in the Business Directory.</p>
-        <a href="/business-directory" className="btn-primary inline-block mt-6">View Business Directory</a>
+        <a href={folderBackHref} className="btn-primary inline-block mt-6">{folderBackLabel}</a>
       </div>
     );
   }
 
   return (
     <div className="max-w-lg mx-auto">
-      <a href="/business-directory" className="text-brand-700 text-sm font-medium flex items-center gap-1 mb-4 hover:underline w-fit">
-        <ArrowLeft size={16} /> Back to Business Directory
+      <a href={folderBackHref} className="text-brand-700 text-sm font-medium flex items-center gap-1 mb-4 hover:underline w-fit">
+        <ArrowLeft size={16} /> {folderBackLabel}
       </a>
 
       <div className="text-center mb-6">
@@ -224,7 +226,6 @@ function UpdateBusinessInfoInner() {
         <p className="text-ink-700/60 text-sm mt-1">Add or update your own work/business listings.</p>
       </div>
 
-      {/* Search step — only shown if we didn't arrive with a known member (?alot=) */}
       {!selected && !presetAlot && (
         <form onSubmit={handleSearch} className="card space-y-3">
           <label className="text-sm font-medium text-ink-800">Find your record</label>
@@ -253,7 +254,6 @@ function UpdateBusinessInfoInner() {
         </form>
       )}
 
-      {/* Verify step */}
       {selected && !verified && (
         <div className="card space-y-3">
           {!presetAlot && (
@@ -277,7 +277,6 @@ function UpdateBusinessInfoInner() {
         </div>
       )}
 
-      {/* After verification: pick an existing listing to edit, or add a new one */}
       {selected && verified && editingEntryId === null && (
         <div className="space-y-3">
           <p className="text-sm text-ink-800 card !py-3">
@@ -298,7 +297,6 @@ function UpdateBusinessInfoInner() {
         </div>
       )}
 
-      {/* The actual add/edit form */}
       {selected && verified && editingEntryId !== null && (
         <form onSubmit={handleSubmit} className="card space-y-4">
           <button type="button" onClick={() => setEditingEntryId(null)} className="text-brand-700 text-sm font-medium flex items-center gap-1 hover:underline">

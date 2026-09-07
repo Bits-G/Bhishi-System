@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   Search, Pencil, X, Briefcase, Building2, MapPin, Phone, UserCog,
@@ -33,8 +34,11 @@ const emptyForm: Partial<Entry> = {
   place: "", business_area: "", landmark: "", city: "", state: "", pincode: "", work_status: "", additional_info: "",
 };
 
-export default function BusinessDirectoryBoard({ canManage = false }: { canManage?: boolean }) {
+function BusinessDirectoryInner({ canManage = false }: { canManage?: boolean }) {
   const supabase = createClient();
+  const searchParams = useSearchParams();
+  const openAlot = searchParams.get("open"); // deep-link straight into a folder, e.g. from the update-business-info page
+
   const [members, setMembers] = useState<Member[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [search, setSearch] = useState("");
@@ -45,7 +49,7 @@ export default function BusinessDirectoryBoard({ canManage = false }: { canManag
   const [form, setForm] = useState<Partial<Entry>>(emptyForm);
   const [saving, setSaving] = useState(false);
 
-  const [clearingMember, setClearingMember] = useState<Member | null>(null); // root-level "None / clear all" confirm
+  const [clearingMember, setClearingMember] = useState<Member | null>(null);
 
   async function loadData() {
     setLoading(true);
@@ -63,6 +67,13 @@ export default function BusinessDirectoryBoard({ canManage = false }: { canManag
     loadData();
   }, []);
 
+  // Auto-open the folder named in ?open=<alot_number>, once members have loaded.
+  useEffect(() => {
+    if (!openAlot || members.length === 0) return;
+    const match = members.find((m) => m.alot_number === Number(openAlot));
+    if (match) setOpenFolder(match);
+  }, [openAlot, members]);
+
   function entriesFor(memberId: number) {
     return entries.filter((e) => e.member_id === memberId);
   }
@@ -71,9 +82,6 @@ export default function BusinessDirectoryBoard({ canManage = false }: { canManag
     return [e.place, e.business_area, e.landmark, e.city, e.state, e.pincode].filter(Boolean).join(", ");
   }
 
-  // Root-level search matches on the member's own fields AND anything inside
-  // their listings (business name, place, state) — so searching a business name
-  // or city surfaces the right member folder, not just name/alot/district.
   const foldersWithEntries = new Set(entries.map((e) => e.member_id));
   const visibleMembers = canManage ? members : members.filter((m) => foldersWithEntries.has(m.id));
 
@@ -165,7 +173,6 @@ export default function BusinessDirectoryBoard({ canManage = false }: { canManag
     loadData();
   }
 
-  // ---------- ROOT VIEW: folders ----------
   if (!openFolder) {
     return (
       <div>
@@ -228,7 +235,6 @@ export default function BusinessDirectoryBoard({ canManage = false }: { canManag
           </div>
         )}
 
-        {/* Clear-all confirm modal */}
         {clearingMember && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
             <div className="bg-white rounded-xl2 shadow-soft p-6 w-full max-w-sm relative">
@@ -251,7 +257,6 @@ export default function BusinessDirectoryBoard({ canManage = false }: { canManag
     );
   }
 
-  // ---------- INSIDE A FOLDER ----------
   const folderEntries = entriesFor(openFolder.id);
 
   return (
@@ -327,7 +332,6 @@ export default function BusinessDirectoryBoard({ canManage = false }: { canManag
         )}
       </div>
 
-      {/* Staff add/edit entry modal */}
       {editingEntry && canManage && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4 py-8 overflow-y-auto">
           <div className="bg-white rounded-xl2 shadow-soft p-6 w-full max-w-lg relative my-auto">
@@ -375,5 +379,13 @@ export default function BusinessDirectoryBoard({ canManage = false }: { canManag
         </div>
       )}
     </div>
+  );
+}
+
+export default function BusinessDirectoryBoard({ canManage = false }: { canManage?: boolean }) {
+  return (
+    <Suspense fallback={<p className="text-center text-ink-700/50 py-10">Loading...</p>}>
+      <BusinessDirectoryInner canManage={canManage} />
+    </Suspense>
   );
 }
