@@ -36,7 +36,7 @@ export default function BusinessDirectoryBoard({ canManage = false }: { canManag
   // "none" is a client-only state meaning "clear this entry" — it is never written
   // to the database as info_type (the DB column only allows work/business/both).
   // Saving with "none" selected deletes the row instead of upserting it.
-  const [form, setForm] = useState<Partial<Entry> & { info_type?: Entry["info_type"] | "none" }>({});
+  const [form, setForm] = useState<Omit<Partial<Entry>, "info_type"> & { info_type?: Entry["info_type"] | "none" }>({});
   const [saving, setSaving] = useState(false);
 
   async function loadData() {
