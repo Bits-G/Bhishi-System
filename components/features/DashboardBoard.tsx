@@ -62,7 +62,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
   const [activeMonth, setActiveMonth] = useState(currentMonthIndex);
   const [statusMap, setStatusMap] = useState<Record<number, string>>({});
   const [winners, setWinners] = useState<any[]>([]);
-  const [bizEntries, setBizEntries] = useState<Record<number, BizEntry>>({});
+  const [bizEntries, setBizEntries] = useState<Record<number, BizEntry[]>>({});
   const [loadingPanel, setLoadingPanel] = useState(false);
   const [editingWinnerId, setEditingWinnerId] = useState<number | null>(null);
   const [editWinnerValue, setEditWinnerValue] = useState("");
@@ -73,13 +73,13 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
 
   async function loadCounts() {
     const monthKey = MONTHS[currentMonthIndex];
-    const [{ data: memberRows, count: memberCount }, { count: paidCount }, { count: presentCount }, { count: winnerCount }, { count: bizCount }] =
+    const [{ data: memberRows, count: memberCount }, { count: paidCount }, { count: presentCount }, { count: winnerCount }, { data: bizMemberIds }] =
       await Promise.all([
         supabase.from("members").select("id, member_name, alot_number, district", { count: "exact" }).order("alot_number"),
         supabase.from("payments").select("*", { count: "exact", head: true }).eq("status", "paid").eq("month", monthKey),
         supabase.from("attendance").select("*", { count: "exact", head: true }).eq("status", "present").eq("month", monthKey),
         supabase.from("winners").select("*", { count: "exact", head: true }),
-        supabase.from("business_directory").select("*", { count: "exact", head: true }),
+        supabase.from("business_directory").select("member_id"),
       ]);
 
     setMembers(memberRows ?? []);
@@ -99,7 +99,7 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
       absent: Math.max(total - (presentCount ?? 0), 0),
       winners: winnerCount ?? 0,
       admins: adminCount,
-      bizSubmitted: bizCount ?? 0,
+      bizSubmitted: new Set((bizMemberIds ?? []).map((r: any) => r.member_id)).size,
     });
   }
 
@@ -135,8 +135,11 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
   async function loadBizDirectory() {
     setLoadingPanel(true);
     const { data } = await supabase.from("business_directory").select("*");
-    const map: Record<number, BizEntry> = {};
-    (data ?? []).forEach((e: BizEntry) => (map[e.member_id] = e));
+    const map: Record<number, BizEntry[]> = {};
+    (data ?? []).forEach((e: BizEntry) => {
+      if (!map[e.member_id]) map[e.member_id] = [];
+      map[e.member_id].push(e);
+    });
     setBizEntries(map);
     setLoadingPanel(false);
   }
@@ -215,17 +218,13 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
         startY: 22,
         styles: { font: PDF_FONT_NAME },
         headStyles: { font: PDF_FONT_NAME },
-        head: [["Alot No.", "Member Name", "District", "Work", "Business", "Status"]],
+        head: [["Alot No.", "Member Name", "District", "Listings"]],
         body: members.map((m) => {
-          const e = bizEntries[m.id];
-          return [
-            m.alot_number,
-            m.member_name,
-            m.district ?? "-",
-            e?.work_name ? `${e.work_name}${e.work_role ? " - " + e.work_role : ""}` : "-",
-            e?.business_name ? `${e.business_name}${e.business_role ? " - " + e.business_role : ""}` : "-",
-            e?.work_status ?? "-",
-          ];
+          const list = bizEntries[m.id] ?? [];
+          const summary = list.length
+            ? list.map((e) => e.work_name || e.business_name || e.info_type).join("; ")
+            : "-";
+          return [m.alot_number, m.member_name, m.district ?? "-", summary];
         }),
       });
     } else {
@@ -425,31 +424,27 @@ export default function DashboardBoard({ portal }: { portal: "master-admin" | "a
                     <th className="py-2 pr-4">Alot No.</th>
                     <th className="py-2 pr-4">Member Name</th>
                     <th className="py-2 pr-4">District</th>
-                    <th className="py-2 pr-4">Work</th>
-                    <th className="py-2 pr-4">Business</th>
-                    <th className="py-2 pr-4">Status</th>
+                    <th className="py-2 pr-4">Listings</th>
                   </tr>
                 </thead>
                 <tbody>
                   {members.map((m) => {
-                    const e = bizEntries[m.id];
+                    const list = bizEntries[m.id] ?? [];
                     return (
                       <tr key={m.id} className="border-b border-brand-50">
                         <td className="py-2 pr-4">{m.alot_number}</td>
                         <td className="py-2 pr-4 font-medium">{m.member_name}</td>
                         <td className="py-2 pr-4">{m.district}</td>
                         <td className="py-2 pr-4">
-                          {e?.work_name ? `${e.work_name}${e.work_role ? " - " + e.work_role : ""}` : <span className="text-ink-700/40">-</span>}
+                          {list.length > 0
+                            ? list.map((e) => e.work_name || e.business_name || e.info_type).join(", ")
+                            : <span className="text-ink-700/40">No business info added yet.</span>}
                         </td>
-                        <td className="py-2 pr-4">
-                          {e?.business_name ? `${e.business_name}${e.business_role ? " - " + e.business_role : ""}` : <span className="text-ink-700/40">-</span>}
-                        </td>
-                        <td className="py-2 pr-4">{e?.work_status || <span className="text-ink-700/40">Not set</span>}</td>
                       </tr>
                     );
                   })}
                   {members.length === 0 && (
-                    <tr><td colSpan={6} className="py-6 text-center text-ink-700/50">No members found.</td></tr>
+                    <tr><td colSpan={4} className="py-6 text-center text-ink-700/50">No members found.</td></tr>
                   )}
                 </tbody>
               </table>
